@@ -19,11 +19,15 @@ const r2Client = new S3Client({
  */
 export async function uploadToR2(file, key, onProgress) {
   try {
+    // Convert File to ArrayBuffer for browser compatibility
+    const arrayBuffer = await file.arrayBuffer()
+
     const command = new PutObjectCommand({
       Bucket: import.meta.env.VITE_R2_BUCKET_NAME,
       Key: key,
-      Body: file,
-      ContentType: file.type || 'audio/mpeg'
+      Body: new Uint8Array(arrayBuffer),
+      ContentType: file.type || 'audio/mpeg',
+      ContentLength: file.size
     })
 
     // Upload the file
