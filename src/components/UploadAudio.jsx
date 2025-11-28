@@ -8,6 +8,7 @@ export default function UploadAudio({ audiobookId, onClose, onUploadComplete }) 
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState({})
+  const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef(null)
 
   const handleFileSelect = async (e) => {
@@ -73,6 +74,44 @@ export default function UploadAudio({ audiobookId, onClose, onUploadComplete }) 
     setFiles(prev =>
       prev.map(f => f.id === fileId ? { ...f, name: newName } : f)
     )
+  }
+
+  const handleDragEnter = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!uploading) {
+      setIsDragging(true)
+    }
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    if (uploading) return
+
+    const droppedFiles = Array.from(e.dataTransfer.files)
+
+    // Create a mock event object for handleFileSelect
+    const mockEvent = {
+      target: {
+        files: droppedFiles
+      }
+    }
+
+    await handleFileSelect(mockEvent)
   }
 
   const uploadFile = async (fileData, trackNumber) => {
@@ -206,10 +245,16 @@ export default function UploadAudio({ audiobookId, onClose, onUploadComplete }) 
         <div className="mb-6">
           <div
             onClick={() => !uploading && fileInputRef.current?.click()}
-            className={`border-2 border-dashed border-gray-300 rounded-xl p-12 text-center transition-smooth ${
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-xl p-12 text-center transition-smooth ${
               uploading
-                ? 'opacity-50 cursor-not-allowed'
-                : 'cursor-pointer hover:border-primary-500 hover:bg-primary-50'
+                ? 'opacity-50 cursor-not-allowed border-gray-300'
+                : isDragging
+                ? 'cursor-pointer border-primary-500 bg-primary-100'
+                : 'cursor-pointer border-gray-300 hover:border-primary-500 hover:bg-primary-50'
             }`}
           >
             <Upload size={48} className="mx-auto text-gray-400 mb-4" />
