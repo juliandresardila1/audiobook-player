@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase Connection Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://iktaghupvesqcvtzsbeu.supabase.co'
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrdGFnaHVwdmVzcWN2dHpzYmV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODU5MzUsImV4cCI6MjA3OTg2MTkzNX0.3eoiIEsb1ALr8oByhXafB4jecMBODqKHryvpkn1An80'
+
+        const { createClient } = supabase
+        const client = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+        async function runTests() {
+            const results = document.getElementById('results')
+
+            try {
+                // Test 1: Check connection
+                results.innerHTML += '<h2>Test 1: Connection</h2>'
+                results.innerHTML += '<p>✅ Supabase client created</p>'
+
+                // Test 2: Try to read from audiobooks table
+                results.innerHTML += '<h2>Test 2: Read from audiobooks table</h2>'
+                const { data: readData, error: readError } = await client
+                    .from('audiobooks')
+                    .select('*')
+                    .limit(1)
+
+                if (readError) {
+                    results.innerHTML += `<p>❌ Read Error: ${readError.message}</p>`
+                    results.innerHTML += `<pre>${JSON.stringify(readError, null, 2)}</pre>`
+                } else {
+                    results.innerHTML += `<p>✅ Can read from audiobooks table</p>`
+                    results.innerHTML += `<p>Found ${readData.length} rows</p>`
+                }
+
+                // Test 3: Try to insert into audiobooks table
+                results.innerHTML += '<h2>Test 3: Insert test record</h2>'
+                const { data: insertData, error: insertError } = await client
+                    .from('audiobooks')
+                    .insert([{
+                        name: 'Test Audiobook',
+                        author: 'Test Author'
+                    }])
+                    .select()
+
+                if (insertError) {
+                    results.innerHTML += `<p>❌ Insert Error: ${insertError.message}</p>`
+                    results.innerHTML += `<pre>${JSON.stringify(insertError, null, 2)}</pre>`
+                    results.innerHTML += '<h3>Possible causes:</h3>'
+                    results.innerHTML += '<ul>'
+                    results.innerHTML += '<li>RLS policies not set correctly</li>'
+                    results.innerHTML += '<li>PostgREST schema cache not refreshed</li>'
+                    results.innerHTML += '<li>Table not visible to anon role</li>'
+                    results.innerHTML += '</ul>'
+                } else {
+                    results.innerHTML += `<p>✅ Successfully inserted test record</p>`
+                    results.innerHTML += `<pre>${JSON.stringify(insertData, null, 2)}</pre>`
+
+                    // Clean up - delete test record
+                    if (insertData && insertData[0]) {
+                        await client
+                            .from('audiobooks')
+                            .delete()
+                            .eq('id', insertData[0].id)
+                        results.innerHTML += `<p>✅ Cleaned up test record</p>`
+                    }
+                }
+
+                // Test 4: Check storage buckets
+                results.innerHTML += '<h2>Test 4: Storage Buckets</h2>'
+                const { data: buckets, error: bucketError } = await client
+                    .storage
+                    .listBuckets()
+
+                if (bucketError) {
+                    results.innerHTML += `<p>❌ Bucket Error: ${bucketError.message}</p>`
+                } else {
+                    results.innerHTML += `<p>✅ Found ${buckets.length} storage buckets</p>`
+                    results.innerHTML += '<ul>'
+                    buckets.forEach(bucket => {
+                        results.innerHTML += `<li>${bucket.id} (${bucket.public ? 'public' : 'private'})</li>`
+                    })
+                    results.innerHTML += '</ul>'
+                }
+
+            } catch (err) {
+                results.innerHTML += `<h2>❌ Unexpected Error</h2>`
+                results.innerHTML += `<pre>${err.message}</pre>`
+                results.innerHTML += `<pre>${err.stack}</pre>`
+            }
+        }
+
+        runTests()
+    </script>
+</body>
+</html>

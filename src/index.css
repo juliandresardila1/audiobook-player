@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply min-h-screen text-gray-800;
+    background: linear-gradient(135deg,
+      #fef3f9 0%,
+      #f0f9ff 20%,
+      #fef3f9 40%,
+      #f0fdf4 60%,
+      #fef3f9 80%,
+      #fef3ff 100%
+    );
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite;
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+}
+
+@layer components {
+  /* Glassmorphism effect */
+  .glass {
+    @apply bg-white/60 backdrop-blur-xl border border-white/80 shadow-lg;
+  }
+
+  .glass-dark {
+    @apply bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-smooth hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/30 hover:border-primary-200;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-xl font-semibold transition-smooth hover:from-primary-600 hover:to-accent-600 hover:shadow-xl hover:shadow-primary-500/30;
+  }
+
+  .btn-secondary {
+    @apply bg-white/70 backdrop-blur text-gray-700 px-6 py-3 rounded-xl font-semibold border border-gray-200 transition-smooth hover:bg-white hover:border-gray-300 hover:shadow-lg;
+  }
+
+  .btn-danger {
+    @apply bg-red-50 text-red-600 px-4 py-2 rounded-lg font-medium border border-red-200 transition-smooth hover:bg-red-100 hover:border-red-300;
+  }
+
+  /* Input styles */
+  .input-primary {
+    @apply w-full bg-white/70 border border-gray-200 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-smooth;
+  }
+
+  /* Scrollbar styles */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* Range slider styling */
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0ea5e9, #d946ef);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0ea5e9, #d946ef);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+}
