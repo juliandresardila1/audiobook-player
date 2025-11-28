@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { uploadToR2, generateR2Key } from '../lib/r2'
 import { X, Upload, FileAudio, Trash2, Check } from 'lucide-react'
 import { getAudioMetadata, compressAudioIfNeeded, formatFileSize } from '../utils/audioUtils'
 
@@ -81,28 +82,17 @@ export default function UploadAudio({ audiobookId, onClose, onUploadComplete }) 
         prev.map(f => f.id === fileData.id ? { ...f, status: 'uploading' } : f)
       )
 
-      // Upload to Supabase Storage
+      // Upload to Cloudflare R2
       const fileExt = 'mp3'
-      const fileName = `${audiobookId}/${trackNumber}-${Date.now()}.${fileExt}`
-      const filePath = `tracks/${fileName}`
+      const r2Key = generateR2Key(audiobookId, trackNumber, fileExt)
 
-      const { error: uploadError } = await supabase.storage
-        .from('audio-files')
-        .upload(filePath, fileData.file, {
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            )
-            setProgress(prev => ({ ...prev, [fileData.id]: percentCompleted }))
-          }
-        })
-
-      if (uploadError) throw uploadError
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('audio-files')
-        .getPublicUrl(filePath)
+      // Upload with progress tracking
+      const publicUrl = await uploadToR2(fileData.file, r2Key, (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        )
+        setProgress(prev => ({ ...prev, [fileData.id]: percentCompleted }))
+      })
 
       // Create track record in database
       const { error: dbError } = await supabase
