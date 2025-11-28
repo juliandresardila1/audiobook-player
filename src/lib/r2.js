@@ -7,7 +7,9 @@ const r2Client = new S3Client({
   credentials: {
     accessKeyId: import.meta.env.VITE_R2_ACCESS_KEY_ID,
     secretAccessKey: import.meta.env.VITE_R2_SECRET_ACCESS_KEY
-  }
+  },
+  forcePathStyle: true, // Use path-style URLs instead of virtual-hosted style
+  tls: true
 })
 
 /**
@@ -44,7 +46,14 @@ export async function uploadToR2(file, key, onProgress) {
 
     return publicUrl
   } catch (error) {
-    console.error('R2 upload error:', error)
+    console.error('R2 upload error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      statusCode: error.$metadata?.httpStatusCode,
+      requestId: error.$metadata?.requestId,
+      fullError: error
+    })
     throw new Error(`Failed to upload to R2: ${error.message}`)
   }
 }
