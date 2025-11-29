@@ -225,6 +225,7 @@ export default function AudiobookDetail() {
     const timer = setTimeout(() => {
       setDraggedTrack(track)
       setIsDraggingMobile(true)
+      setLongPressTimer(null) // Clear timer after it fires
       // Haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(50)
@@ -235,42 +236,40 @@ export default function AudiobookDetail() {
   }
 
   const handleTouchMove = (e) => {
-    // Cancel long press if user moves before timer completes
-    if (!isDraggingMobile && longPressTimer) {
+    // If dragging is active, allow movement
+    if (isDraggingMobile && draggedTrack) {
+      // Prevent scrolling while dragging
+      e.preventDefault()
+
+      const touch = e.touches[0]
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      const trackElement = element?.closest('[data-track-id]')
+
+      if (trackElement) {
+        const targetTrackId = trackElement.getAttribute('data-track-id')
+        const targetTrack = tracks.find(t => t.id === targetTrackId)
+
+        if (targetTrack && targetTrack.id !== draggedTrack.id) {
+          const draggedIndex = tracks.findIndex(t => t.id === draggedTrack.id)
+          const targetIndex = tracks.findIndex(t => t.id === targetTrack.id)
+
+          const newTracks = [...tracks]
+          newTracks.splice(draggedIndex, 1)
+          newTracks.splice(targetIndex, 0, draggedTrack)
+
+          const updatedTracks = newTracks.map((track, index) => ({
+            ...track,
+            track_number: index + 1
+          }))
+
+          setTracks(updatedTracks)
+          setHasUnsavedChanges(true)
+        }
+      }
+    } else if (longPressTimer) {
+      // Cancel long press if user moves before timer completes
       clearTimeout(longPressTimer)
       setLongPressTimer(null)
-      return
-    }
-
-    if (!draggedTrack || !isDraggingMobile) return
-
-    // Prevent scrolling while dragging
-    e.preventDefault()
-
-    const touch = e.touches[0]
-    const element = document.elementFromPoint(touch.clientX, touch.clientY)
-    const trackElement = element?.closest('[data-track-id]')
-
-    if (trackElement) {
-      const targetTrackId = trackElement.getAttribute('data-track-id')
-      const targetTrack = tracks.find(t => t.id === targetTrackId)
-
-      if (targetTrack && targetTrack.id !== draggedTrack.id) {
-        const draggedIndex = tracks.findIndex(t => t.id === draggedTrack.id)
-        const targetIndex = tracks.findIndex(t => t.id === targetTrack.id)
-
-        const newTracks = [...tracks]
-        newTracks.splice(draggedIndex, 1)
-        newTracks.splice(targetIndex, 0, draggedTrack)
-
-        const updatedTracks = newTracks.map((track, index) => ({
-          ...track,
-          track_number: index + 1
-        }))
-
-        setTracks(updatedTracks)
-        setHasUnsavedChanges(true)
-      }
     }
   }
 
