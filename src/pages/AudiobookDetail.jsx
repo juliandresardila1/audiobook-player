@@ -209,6 +209,46 @@ export default function AudiobookDetail() {
     setDraggedTrack(null)
   }
 
+  // Touch event handlers for mobile
+  const handleTouchStart = (e, track) => {
+    setDraggedTrack(track)
+  }
+
+  const handleTouchMove = (e) => {
+    if (!draggedTrack) return
+    e.preventDefault()
+
+    const touch = e.touches[0]
+    const element = document.elementFromPoint(touch.clientX, touch.clientY)
+    const trackElement = element?.closest('[data-track-id]')
+
+    if (trackElement) {
+      const targetTrackId = trackElement.getAttribute('data-track-id')
+      const targetTrack = tracks.find(t => t.id === targetTrackId)
+
+      if (targetTrack && targetTrack.id !== draggedTrack.id) {
+        const draggedIndex = tracks.findIndex(t => t.id === draggedTrack.id)
+        const targetIndex = tracks.findIndex(t => t.id === targetTrack.id)
+
+        const newTracks = [...tracks]
+        newTracks.splice(draggedIndex, 1)
+        newTracks.splice(targetIndex, 0, draggedTrack)
+
+        const updatedTracks = newTracks.map((track, index) => ({
+          ...track,
+          track_number: index + 1
+        }))
+
+        setTracks(updatedTracks)
+        setHasUnsavedChanges(true)
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setDraggedTrack(null)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -366,12 +406,16 @@ export default function AudiobookDetail() {
             {tracks.map((track) => (
               <div
                 key={track.id}
+                data-track-id={track.id}
                 draggable={editingTrackId !== track.id}
                 onDragStart={(e) => handleDragStart(e, track)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, track)}
                 onDragEnd={handleDragEnd}
-                className={`glass p-1.5 sm:p-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-smooth hover:bg-white/80 hover:shadow-lg ${
+                onTouchStart={(e) => handleTouchStart(e, track)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className={`glass p-1.5 sm:p-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-smooth hover:bg-white/80 hover:shadow-lg touch-manipulation ${
                   draggedTrack?.id === track.id ? 'opacity-50' : ''
                 } ${editingTrackId === track.id ? '' : 'cursor-move'}`}
               >
