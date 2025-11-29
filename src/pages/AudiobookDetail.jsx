@@ -22,6 +22,8 @@ export default function AudiobookDetail() {
   const [isSaving, setIsSaving] = useState(false)
   const [editingTrackId, setEditingTrackId] = useState(null)
   const [editingTrackName, setEditingTrackName] = useState('')
+  const [longPressTimer, setLongPressTimer] = useState(null)
+  const [isDraggingMobile, setIsDraggingMobile] = useState(false)
 
   useEffect(() => {
     loadAudiobookData()
@@ -209,15 +211,40 @@ export default function AudiobookDetail() {
     setDraggedTrack(null)
   }
 
-  // Touch event handlers for mobile - only on drag handle
+  // Touch event handlers for mobile - long press to drag
   const handleTouchStart = (e, track) => {
-    // Only start drag if touching the drag handle
+    // Only on drag handle
     if (!e.target.closest('.drag-handle')) return
-    setDraggedTrack(track)
+
+    // Clear any existing timer
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+    }
+
+    // Start long press timer (500ms)
+    const timer = setTimeout(() => {
+      setDraggedTrack(track)
+      setIsDraggingMobile(true)
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+    }, 500)
+
+    setLongPressTimer(timer)
   }
 
   const handleTouchMove = (e) => {
-    if (!draggedTrack) return
+    // Cancel long press if user moves before timer completes
+    if (!isDraggingMobile && longPressTimer) {
+      clearTimeout(longPressTimer)
+      setLongPressTimer(null)
+      return
+    }
+
+    if (!draggedTrack || !isDraggingMobile) return
+
+    // Prevent scrolling while dragging
     e.preventDefault()
 
     const touch = e.touches[0]
@@ -248,7 +275,14 @@ export default function AudiobookDetail() {
   }
 
   const handleTouchEnd = () => {
+    // Clear timer if touch ended before long press completed
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      setLongPressTimer(null)
+    }
+
     setDraggedTrack(null)
+    setIsDraggingMobile(false)
   }
 
   if (loading) {
@@ -417,13 +451,24 @@ export default function AudiobookDetail() {
                 onTouchStart={(e) => handleTouchStart(e, track)}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                className={`glass p-1.5 sm:p-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-smooth hover:bg-white/80 hover:shadow-lg ${
-                  draggedTrack?.id === track.id ? 'opacity-50' : ''
+                style={{
+                  transform: draggedTrack?.id === track.id && isDraggingMobile ? 'scale(1.05) rotate(2deg)' : 'none',
+                  transition: draggedTrack?.id === track.id && isDraggingMobile ? 'none' : 'all 0.2s ease',
+                }}
+                className={`glass p-1.5 sm:p-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-smooth hover:bg-white/80 hover:shadow-lg select-none ${
+                  draggedTrack?.id === track.id && isDraggingMobile ? 'opacity-70 shadow-2xl z-50 bg-white' : ''
                 } ${editingTrackId === track.id ? '' : ''}`}
               >
                 {/* Drag Handle */}
-                <div className="drag-handle p-2 -m-2 cursor-move touch-manipulation active:bg-primary-50 rounded flex-shrink-0">
-                  <GripVertical size={16} className="text-gray-400" />
+                <div
+                  className={`drag-handle p-2 -m-2 cursor-move touch-manipulation rounded flex-shrink-0 transition-colors ${
+                    draggedTrack?.id === track.id && isDraggingMobile ? 'bg-primary-100' : 'active:bg-primary-50'
+                  }`}
+                  title="Long press to drag"
+                >
+                  <GripVertical size={16} className={`transition-colors ${
+                    draggedTrack?.id === track.id && isDraggingMobile ? 'text-primary-600' : 'text-gray-400'
+                  }`} />
                 </div>
 
                 {/* Track Number */}
