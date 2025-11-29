@@ -209,8 +209,10 @@ export default function AudiobookDetail() {
     setDraggedTrack(null)
   }
 
-  // Touch event handlers for mobile
+  // Touch event handlers for mobile - only on drag handle
   const handleTouchStart = (e, track) => {
+    // Only start drag if touching the drag handle
+    if (!e.target.closest('.drag-handle')) return
     setDraggedTrack(track)
   }
 
@@ -415,12 +417,14 @@ export default function AudiobookDetail() {
                 onTouchStart={(e) => handleTouchStart(e, track)}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                className={`glass p-1.5 sm:p-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-smooth hover:bg-white/80 hover:shadow-lg touch-manipulation ${
+                className={`glass p-1.5 sm:p-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-smooth hover:bg-white/80 hover:shadow-lg ${
                   draggedTrack?.id === track.id ? 'opacity-50' : ''
-                } ${editingTrackId === track.id ? '' : 'cursor-move'}`}
+                } ${editingTrackId === track.id ? '' : ''}`}
               >
                 {/* Drag Handle */}
-                <GripVertical size={16} className="text-gray-400 flex-shrink-0 hidden sm:block" />
+                <div className="drag-handle p-2 -m-2 cursor-move touch-manipulation active:bg-primary-50 rounded flex-shrink-0">
+                  <GripVertical size={16} className="text-gray-400" />
+                </div>
 
                 {/* Track Number */}
                 <div className="w-5 sm:w-7 text-center text-gray-600 font-medium flex-shrink-0 text-xs sm:text-sm">

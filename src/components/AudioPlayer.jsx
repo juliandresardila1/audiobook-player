@@ -72,7 +72,7 @@ export default function AudioPlayer({ audiobook, tracks, compact = false, autopl
     if (!currentTrack || !audioRef.current) return
 
     const audio = audioRef.current
-    const wasPlaying = !audio.paused
+    const wasPlaying = isPlaying
 
     setIsLoading(true)
     setError(null)
@@ -80,12 +80,14 @@ export default function AudioPlayer({ audiobook, tracks, compact = false, autopl
     audio.load()
 
     if (wasPlaying || (autoplay && currentTrackIndex === 0)) {
-      audio.play().catch(err => {
-        console.error('Autoplay failed:', err)
-        setIsPlaying(false)
-      })
+      audio.play()
+        .then(() => setIsPlaying(true))
+        .catch(err => {
+          console.error('Autoplay failed:', err)
+          setIsPlaying(false)
+        })
     }
-  }, [currentTrackIndex, currentTrack, autoplay])
+  }, [currentTrackIndex, currentTrack])
 
   // Update volume
   useEffect(() => {
@@ -120,8 +122,10 @@ export default function AudioPlayer({ audiobook, tracks, compact = false, autopl
   const handleNext = () => {
     if (currentTrackIndex < tracks.length - 1) {
       setCurrentTrackIndex(prev => prev + 1)
+      // Keep playing when moving to next track
+      setIsPlaying(true)
     } else {
-      // Loop back to first track
+      // Loop back to first track and stop
       setCurrentTrackIndex(0)
       setIsPlaying(false)
     }
