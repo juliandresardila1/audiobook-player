@@ -15,6 +15,7 @@ export default function AudioPlayer({ audiobook, tracks, compact = false, autopl
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isDraggingProgress, setIsDraggingProgress] = useState(false)
 
   const currentTrack = tracks[currentTrackIndex]
   const speeds = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -103,6 +104,23 @@ export default function AudioPlayer({ audiobook, tracks, compact = false, autopl
     }
   }, [playbackSpeed])
 
+  // Handle progress bar dragging
+  useEffect(() => {
+    if (isDraggingProgress) {
+      window.addEventListener('mousemove', handleProgressMouseMove)
+      window.addEventListener('mouseup', handleProgressMouseUp)
+      window.addEventListener('touchmove', handleProgressTouchMove, { passive: false })
+      window.addEventListener('touchend', handleProgressTouchEnd)
+
+      return () => {
+        window.removeEventListener('mousemove', handleProgressMouseMove)
+        window.removeEventListener('mouseup', handleProgressMouseUp)
+        window.removeEventListener('touchmove', handleProgressTouchMove)
+        window.removeEventListener('touchend', handleProgressTouchEnd)
+      }
+    }
+  }, [isDraggingProgress])
+
   const togglePlayPause = () => {
     if (!audioRef.current || !currentTrack) return
 
@@ -140,15 +158,52 @@ export default function AudioPlayer({ audiobook, tracks, compact = false, autopl
     }
   }
 
-  const handleSeek = (e) => {
-    if (!audioRef.current || !progressBarRef.current) return
+  const updateSeekPosition = (clientX) => {
+    if (!audioRef.current || !progressBarRef.current || !duration) return
 
     const rect = progressBarRef.current.getBoundingClientRect()
-    const pos = (e.clientX - rect.left) / rect.width
+    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
     const newTime = pos * duration
 
     audioRef.current.currentTime = newTime
     setCurrentTime(newTime)
+  }
+
+  const handleSeek = (e) => {
+    updateSeekPosition(e.clientX)
+  }
+
+  const handleProgressMouseDown = (e) => {
+    setIsDraggingProgress(true)
+    updateSeekPosition(e.clientX)
+  }
+
+  const handleProgressMouseMove = (e) => {
+    if (isDraggingProgress) {
+      updateSeekPosition(e.clientX)
+    }
+  }
+
+  const handleProgressMouseUp = () => {
+    setIsDraggingProgress(false)
+  }
+
+  const handleProgressTouchStart = (e) => {
+    setIsDraggingProgress(true)
+    const touch = e.touches[0]
+    updateSeekPosition(touch.clientX)
+  }
+
+  const handleProgressTouchMove = (e) => {
+    if (isDraggingProgress) {
+      e.preventDefault()
+      const touch = e.touches[0]
+      updateSeekPosition(touch.clientX)
+    }
+  }
+
+  const handleProgressTouchEnd = () => {
+    setIsDraggingProgress(false)
   }
 
   const handleSkipForward = () => {
@@ -234,15 +289,20 @@ export default function AudioPlayer({ audiobook, tracks, compact = false, autopl
         <div
           ref={progressBarRef}
           onClick={handleSeek}
-          className="h-2.5 sm:h-2 bg-gray-200 rounded-full cursor-pointer group relative touch-manipulation"
+          onMouseDown={handleProgressMouseDown}
+          onTouchStart={handleProgressTouchStart}
+          className="h-2.5 sm:h-2 bg-gray-200 rounded-full cursor-pointer group relative touch-manipulation select-none"
+          style={{ userSelect: 'none' }}
         >
           <div
-            className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full transition-all group-hover:h-3"
+            className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full transition-all group-hover:h-3 pointer-events-none"
             style={{ width: `${progress}%` }}
           />
           {/* Progress indicator dot */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-primary-500 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-primary-500 rounded-full shadow-lg transition-opacity pointer-events-none ${
+              isDraggingProgress ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}
             style={{ left: `calc(${progress}% - 8px)` }}
           />
         </div>
